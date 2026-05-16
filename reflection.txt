@@ -1,0 +1,30 @@
+LeadAudit AI - Technical Reflection
+
+1. Architectural Decisions
+--------------------------
+For this assignment, I chose a monolithic-repository (monorepo) structure separating the frontend (client) and backend (server) while maintaining them in a single version-controlled repository. This simplifies the development setup process and makes evaluating the code much easier.
+
+- Frontend: React with Vite and Tailwind CSS. I prioritized a clean, professional, B2B SaaS design language (inspired by Stripe and Vercel) over a flashy "vibe-coded" interface. State management is handled through custom hooks to keep components clean.
+- Backend: Node.js with Express. I implemented a modular MVC architecture (Controllers, Services, Models) to separate business logic.
+- Database: MongoDB via Mongoose. It allows flexible document storage, which is ideal for storing variable JSON responses from the OpenAI API.
+
+2. Key Challenges & Solutions
+-----------------------------
+A major challenge was handling long-running API requests. Web scraping, calling OpenAI (which can take 10-20 seconds), generating a PDF, and sending an email in a single synchronous HTTP request would likely cause browser timeouts and a poor user experience.
+
+Solution: I implemented an asynchronous background processing pipeline. When a lead is submitted, the backend immediately returns a 202 Accepted response with a lead ID, while the processing runs in the background. The frontend then polls a `/api/leads/:id/status` endpoint to update a real-time progress UI for the user.
+
+3. Trade-offs Made
+------------------
+PDF Generation: I initially considered using Puppeteer to convert HTML to PDF, as it allows for easy styling. However, Puppeteer requires downloading a ~300MB Chromium instance, which makes dependency installation heavy and deployment significantly harder (especially on serverless environments). 
+Trade-off: I chose PDFKit instead. While PDFKit requires manual programmatic drawing (calculating X/Y coordinates for text and shapes) which took more development time, it keeps the server incredibly lightweight and fast with zero system-level dependencies.
+
+4. Future Improvements
+----------------------
+Given more time, I would implement the following:
+- Comprehensive Unit & Integration Testing (Jest/Supertest) for the API endpoints and services.
+- Rate Limiting & Abuse Prevention (express-rate-limit) to prevent spamming the OpenAI API and exhausting credits.
+- Dockerization (Dockerfile & docker-compose.yml) to guarantee environment consistency across any machine.
+- User Authentication (JWT) to allow users to view a historical dashboard of all generated reports.
+
+This project was an excellent opportunity to demonstrate full-stack architecture, API integration, and asynchronous state management.
