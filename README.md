@@ -261,6 +261,4 @@ When a lead is submitted, the system runs this pipeline asynchronously:
 - [ ] Dockerized deployment
 - [ ] Unit and integration tests
 
-## 📄 License
 
-MIT
