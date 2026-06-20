@@ -1,16 +1,16 @@
-const OpenAI = require('openai');
+const { GoogleGenAI } = require('@google/genai');
 const logger = require('../utils/logger');
 
-let openaiInstance = null;
+let aiInstance = null;
 
-function getOpenAIClient() {
-  if (!openaiInstance) {
-    if (!process.env.OPENAI_API_KEY) {
-      throw new Error('OPENAI_API_KEY environment variable is missing.');
+function getAIClient() {
+  if (!aiInstance) {
+    if (!process.env.GEMINI_API_KEY) {
+      throw new Error('GEMINI_API_KEY environment variable is missing.');
     }
-    openaiInstance = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+    aiInstance = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
   }
-  return openaiInstance;
+  return aiInstance;
 }
 
 const SYSTEM_PROMPT = `You are an elite business consultant and digital strategist. You produce highly personalized, insightful business audit reports. Your reports must feel custom-written for the specific company — never generic.
@@ -32,56 +32,52 @@ Return your response as valid JSON with exactly this structure:
 The seoScore should be 0-100 based on your assessment of their current SEO posture.
 The recommendations array should contain exactly 5 prioritized, actionable items.`;
 
+async function generateWithModel(ai, modelName, prompt) {
+  const response = await ai.models.generateContent({
+    model: modelName,
+    contents: prompt,
+    config: {
+      systemInstruction: SYSTEM_PROMPT,
+      responseMimeType: 'application/json',
+      temperature: 0.7,
+    },
+  });
+
+  const content = response.text;
+  return JSON.parse(content);
+}
+
 /**
- * Generates a personalized AI audit report using OpenAI.
+ * Generates a personalized AI audit report using Gemini.
+ * Includes multiple fallbacks in case the primary model is rate-limited or unavailable.
  */
 async function generateReport(leadData, enrichmentData) {
   logger.info(`Generating AI report for ${leadData.companyName}...`);
 
   const userPrompt = buildPrompt(leadData, enrichmentData);
+  const ai = getAIClient();
 
-  try {
-    const client = getOpenAIClient();
-    const completion = await client.chat.completions.create({
-      model: 'gpt-4o',
-      messages: [
-        { role: 'system', content: SYSTEM_PROMPT },
-        { role: 'user', content: userPrompt },
-      ],
-      response_format: { type: 'json_object' },
-      temperature: 0.7,
-      max_tokens: 4000,
-    });
+  // List of models to try in order of preference
+  const modelsToTry = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-flash-latest'];
 
-    const content = completion.choices[0].message.content;
-    const report = JSON.parse(content);
-
-    logger.success(`AI report generated for ${leadData.companyName}`);
-    return report;
-  } catch (error) {
-    // Fallback to gpt-3.5-turbo if gpt-4o fails
-    if (error.code === 'model_not_found' || error.status === 404) {
-      logger.warn('gpt-4o not available, falling back to gpt-3.5-turbo');
-      return generateWithFallback(userPrompt);
+  for (let i = 0; i < modelsToTry.length; i++) {
+    const model = modelsToTry[i];
+    try {
+      logger.info(`Attempting report generation with ${model}...`);
+      const report = await generateWithModel(ai, model, userPrompt);
+      logger.success(`AI report generated for ${leadData.companyName} using ${model}`);
+      return report;
+    } catch (error) {
+      logger.warn(`${model} failed to generate report: ${error.message}`);
+      
+      // If it's the last model, throw the error
+      if (i === modelsToTry.length - 1) {
+        logger.error(`All models failed to generate AI report.`);
+        throw error;
+      }
+      logger.info(`Retrying with next fallback model...`);
     }
-    throw error;
   }
-}
-
-async function generateWithFallback(userPrompt) {
-  const client = getOpenAIClient();
-  const completion = await client.chat.completions.create({
-    model: 'gpt-3.5-turbo',
-    messages: [
-      { role: 'system', content: SYSTEM_PROMPT },
-      { role: 'user', content: userPrompt },
-    ],
-    response_format: { type: 'json_object' },
-    temperature: 0.7,
-    max_tokens: 4000,
-  });
-
-  return JSON.parse(completion.choices[0].message.content);
 }
 
 function buildPrompt(lead, enrichment) {

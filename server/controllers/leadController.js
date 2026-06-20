@@ -149,3 +149,26 @@ exports.getAllLeads = async (req, res, next) => {
     next(error);
   }
 };
+
+/**
+ * GET /api/leads/:id/download — Download the generated PDF report.
+ */
+exports.downloadLeadPDF = async (req, res, next) => {
+  try {
+    const lead = await Lead.findById(req.params.id);
+    if (!lead) {
+      return res.status(404).json({ success: false, error: { message: 'Lead not found' } });
+    }
+    if (!lead.pdfPath) {
+      return res.status(400).json({ success: false, error: { message: 'PDF report not generated yet' } });
+    }
+    const fs = require('fs');
+    if (!fs.existsSync(lead.pdfPath)) {
+      return res.status(404).json({ success: false, error: { message: 'PDF file not found on server' } });
+    }
+
+    res.download(lead.pdfPath, `${lead.companyName.replace(/[^a-zA-Z0-9]/g, '-')}-Audit-Report.pdf`);
+  } catch (error) {
+    next(error);
+  }
+};

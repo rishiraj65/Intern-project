@@ -39,6 +39,7 @@ async function generatePDF(leadData, auditReport) {
     try {
       const doc = new PDFDocument({
         size: 'A4',
+        bufferPages: true,
         margins: { top: 50, bottom: 50, left: 50, right: 50 },
         info: {
           Title: `Business Audit Report - ${leadData.companyName}`,
@@ -76,7 +77,7 @@ async function generatePDF(leadData, auditReport) {
       const pageCount = doc.bufferedPageRange();
       for (let i = 1; i < pageCount.start + pageCount.count; i++) {
         doc.switchToPage(i);
-        drawFooter(doc, i + 1, pageCount.count + 1);
+        drawFooter(doc, i + 1, pageCount.count);
       }
 
       doc.end();

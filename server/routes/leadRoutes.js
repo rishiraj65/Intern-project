@@ -7,5 +7,6 @@ router.post('/', leadValidationRules, validate, leadController.submitLead);
 router.get('/', leadController.getAllLeads);
 router.get('/:id', leadController.getLeadById);
 router.get('/:id/status', leadController.getLeadStatus);
+router.get('/:id/download', leadController.downloadLeadPDF);
 
 module.exports = router;

@@ -40,12 +40,27 @@ export default function SuccessPage() {
           </div>
         )}
 
-        <Link
-          to="/submit"
-          className="inline-block px-5 py-2.5 bg-gray-900 text-white text-sm font-medium rounded-lg hover:bg-gray-800 transition-colors"
-        >
-          Submit another lead
-        </Link>
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-6">
+          <a
+            href={`${import.meta.env.VITE_API_URL || '/api'}/leads/${leadId}/download`}
+            target="_blank"
+            rel="noopener noreferrer"
+            download
+            className="w-full sm:w-auto inline-flex items-center justify-center px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors font-medium"
+          >
+            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+            </svg>
+            Download Audit Report
+          </a>
+
+          <Link
+            to="/submit"
+            className="w-full sm:w-auto inline-flex items-center justify-center px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-800 text-sm font-medium rounded-lg transition-colors"
+          >
+            Submit another lead
+          </Link>
+        </div>
       </div>
     </div>
   );
